@@ -143,6 +143,7 @@ async function submitGuesses() {
   game.style.display = "none";
   status.style.display = "block";
   status.textContent = "Loading...";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 
   try {
     const name = document.getElementById("name").value;
