@@ -8,7 +8,7 @@
 
   <style>
 select {
-  font-size: 20px;
+  font-size: 25px;
   padding: 12px;
   width: 100%;
   max-width: 320px;
@@ -17,7 +17,19 @@ select {
 }
 
 body {
-  font-size: 18px;
+  font-size: 23px;
+}
+
+    /* BIG submit button */
+button {
+  font-size: 22px;
+  padding: 18px;
+  width: 100%;
+  max-width: 400px;
+  border: none;
+  /*border-radius: 10px;*/
+  /*background: #1db954;*/
+  /*color: white;*/
 }
 </style>
 
@@ -144,6 +156,7 @@ async function submitGuesses() {
     });
 
     status.textContent = "Submitted — thanks! ✅";
+    status.innerHTML += `<img src="https://media1.tenor.com/m/gQ5gbtPb0N0AAAAC/thanks-spongebob.gif" />`
 
   } catch (e) {
     status.textContent = "Something went wrong ❌";
