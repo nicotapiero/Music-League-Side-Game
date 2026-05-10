@@ -17,10 +17,11 @@
     }
 
     h1 {
-      margin-top: 0;
-      margin-bottom: 28px;
-      font-size: 42px;
+      margin: 0 0 28px 0;
+      font-size: 40px;
     }
+
+    /* ---------------- LEADERBOARD ---------------- */
 
     .leaderboard {
       display: grid;
@@ -33,7 +34,6 @@
       background: #181818;
       border-radius: 18px;
       padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
     }
 
     .gold { border: 2px solid #FFD700; }
@@ -43,62 +43,60 @@
     .player-rank {
       font-size: 13px;
       opacity: 0.6;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .player-name {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .player-score {
-      font-size: 42px;
+      font-size: 40px;
       font-weight: 800;
       color: #1DB954;
     }
 
     .player-percent {
-      margin-top: 8px;
+      margin-top: 6px;
       opacity: 0.75;
-      font-size: 15px;
     }
+
+    /* ---------------- SONG GRID ---------------- */
 
     .songs {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
     }
 
     .song-card {
       background: #181818;
       border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      padding: 16px;
     }
 
     .song-meta {
-      margin-top: 12px;
-      margin-bottom: 16px;
+      margin: 10px 0 12px 0;
       font-size: 14px;
       opacity: 0.8;
     }
 
-    .ranking {
-      margin-top: 10px;
-    }
+    /* ---------------- RANKING ---------------- */
 
     .rank-row {
       position: relative;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
+      padding: 6px 4px;
+      border-radius: 8px;
     }
 
     .rank-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
       font-size: 14px;
+      margin-bottom: 6px;
     }
 
     .name { font-weight: 500; }
@@ -109,7 +107,7 @@
     }
 
     .correct-badge {
-      margin-left: 8px;
+      margin-left: 6px;
       color: #1DB954;
       font-size: 12px;
     }
@@ -118,7 +116,7 @@
 
     .bar-bg {
       width: 100%;
-      height: 14px;
+      height: 12px;
       background: #2a2a2a;
       border-radius: 999px;
       overflow: hidden;
@@ -126,31 +124,32 @@
 
     .bar {
       height: 100%;
-      border-radius: 999px;
       background: #535353;
-      transition: width 0.6s ease;
+      border-radius: 999px;
+      transition: width 0.5s ease;
     }
 
     .correct .bar {
       background: #1DB954;
     }
 
-    /* Tooltip */
+    /* ---------------- TOOLTIP ---------------- */
+
     .tooltip {
       position: absolute;
       left: 0;
-      top: calc(100% + 8px);
+      top: calc(100% + 6px);
       background: #242424;
       border: 1px solid #333;
       border-radius: 10px;
-      padding: 10px 12px;
+      padding: 10px;
       min-width: 140px;
       font-size: 13px;
       opacity: 0;
       pointer-events: none;
       transform: translateY(-4px);
       transition: 0.15s ease;
-      z-index: 100;
+      z-index: 50;
     }
 
     .rank-row:hover .tooltip {
@@ -163,17 +162,57 @@
       opacity: 0.6;
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
     }
 
     .tooltip-person {
       margin-bottom: 2px;
     }
 
-    .error {
-      color: #ff6b6b;
-      white-space: pre-wrap;
+    /* ---------------- MOBILE ---------------- */
+
+    @media (max-width: 480px) {
+
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .songs {
+        grid-template-columns: 1fr;
+      }
+
+      .song-card {
+        padding: 14px;
+      }
+
+      .player-card {
+        padding: 14px;
+      }
     }
+
+    /* TAP TOOLTIP MODE */
+    @media (hover: none) {
+
+      .tooltip {
+        position: static;
+        opacity: 1;
+        transform: none;
+        display: none;
+        margin-top: 10px;
+      }
+
+      .rank-row.open .tooltip {
+        display: block;
+      }
+
+      .rank-row:active {
+        background: rgba(255,255,255,0.05);
+      }
+    }
+
   </style>
 </head>
 
@@ -189,53 +228,45 @@
 const SHEET_ID = "1JRwCEoSQD_4pLFUa_m9e6CF6aIJHztIgOtcXl36iGrY";
 
 async function load() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const sheetName = params.get("sheet") || "Sheet1";
 
-    document.getElementById("title").innerText =
-      `Music League Results — ${sheetName}`;
+  const params = new URLSearchParams(window.location.search);
+  const sheetName = params.get("sheet") || "Sheet1";
 
-    const url =
-      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  document.getElementById("title").innerText =
+    `Music League Results — ${sheetName}`;
 
-    const res = await fetch(url);
-    const text = await res.text();
+  const url =
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
 
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
+  const res = await fetch(url);
+  const text = await res.text();
 
-    if (start === -1 || end === -1) {
-      throw new Error("Failed to parse sheet");
-    }
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
 
-    const data = JSON.parse(text.substring(start, end + 1));
+  const data = JSON.parse(text.substring(start, end + 1));
 
-    const rawRows = data.table.rows.map(r =>
-      (r.c || []).map(c => c ? c.v : "")
-    );
+  const rows = data.table.rows.map(r =>
+    (r.c || []).map(c => c ? c.v : "")
+  );
 
-    const headers = rawRows[0];
-    const correctRow = rawRows[1];
-    const playerRows = rawRows.slice(2);
+  const headers = rows[0];
+  const correctRow = rows[1];
+  const playerRows = rows.slice(2);
 
-    // filter null songs
-    const songs = [];
-    const correctAnswers = [];
+  // filter null songs
+  const songs = [];
+  const correctAnswers = [];
 
-    headers.slice(1).forEach((id, i) => {
-      if (!id) return;
-      songs.push(id);
-      correctAnswers.push(correctRow[i + 1]);
-    });
+  headers.slice(1).forEach((id, i) => {
+    if (!id) return;
+    songs.push(id);
+    correctAnswers.push(correctRow[i + 1]);
+  });
 
-    renderLeaderboard(correctAnswers, playerRows);
-    renderSongs(songs, correctAnswers, playerRows);
+  renderLeaderboard(correctAnswers, playerRows);
+  renderSongs(songs, correctAnswers, playerRows);
 
-  } catch (err) {
-    document.body.innerHTML =
-      `<div class="error">${err}</div>`;
-  }
 }
 
 function renderLeaderboard(correctAnswers, playerRows) {
@@ -249,7 +280,6 @@ function renderLeaderboard(correctAnswers, playerRows) {
 
       const actual = correctAnswers[i];
 
-      // skip self song
       if (
         String(player).toLowerCase() ===
         String(actual).toLowerCase()
@@ -259,6 +289,7 @@ function renderLeaderboard(correctAnswers, playerRows) {
         String(guess).toLowerCase() ===
         String(actual).toLowerCase()
       ) correct++;
+
     });
 
     const total = correctAnswers.filter(a =>
@@ -272,26 +303,27 @@ function renderLeaderboard(correctAnswers, playerRows) {
       total,
       percent: Math.round(correct / total * 100)
     };
+
   }).sort((a,b) => b.correct - a.correct);
 
-  const el = document.getElementById("leaderboard");
+  document.getElementById("leaderboard").innerHTML =
+    leaderboard.map((p,i) => {
 
-  el.innerHTML = leaderboard.map((p,i) => {
+      let medal = "";
+      if (i===0) medal="gold";
+      else if (i===1) medal="silver";
+      else if (i===2) medal="bronze";
 
-    let medal = "";
-    if (i===0) medal="gold";
-    else if (i===1) medal="silver";
-    else if (i===2) medal="bronze";
+      return `
+        <div class="player-card ${medal}">
+          <div class="player-rank">#${i+1}</div>
+          <div class="player-name">${p.name}</div>
+          <div class="player-score">${p.correct}/${p.total}</div>
+          <div class="player-percent">${p.percent}% accuracy</div>
+        </div>
+      `;
+    }).join("");
 
-    return `
-      <div class="player-card ${medal}">
-        <div class="player-rank">#${i+1}</div>
-        <div class="player-name">${p.name}</div>
-        <div class="player-score">${p.correct}/${p.total}</div>
-        <div class="player-percent">${p.percent}% accuracy</div>
-      </div>
-    `;
-  }).join("");
 }
 
 function renderSongs(songIds, correctAnswers, playerRows) {
@@ -308,7 +340,6 @@ function renderSongs(songIds, correctAnswers, playerRows) {
 
       const player = row[0];
 
-      // skip submitter self vote
       if (
         String(player).toLowerCase() ===
         String(correct).toLowerCase()
@@ -317,7 +348,7 @@ function renderSongs(songIds, correctAnswers, playerRows) {
       const guess = row[i+1];
       if (!guess) return;
 
-      counts[guess] = (counts[guess]||0)+1;
+      counts[guess] = (counts[guess] || 0) + 1;
     });
 
     const ranking = Object.entries(counts)
@@ -355,25 +386,17 @@ function renderSongs(songIds, correctAnswers, playerRows) {
             name.toLowerCase() === correct.toLowerCase();
 
           const width = (count/max)*100;
-const guessers = playerRows
-  .map(r => r[0])
-  .filter((playerName, idx) => {
 
-    // what this player guessed for this song
-    const guess = playerRows[idx][i + 1];
-
-    // match this rank row artist
-    const matches =
-      String(guess || "").toLowerCase().trim() ===
-      String(name).toLowerCase().trim();
-
-    // ❌ exclude the song submitter (correct answer owner)
-    const isSubmitter =
-      String(playerName).toLowerCase().trim() ===
-      String(correct).toLowerCase().trim();
-
-    return matches && !isSubmitter;
-  });
+          const guessers = playerRows
+            .map(r => r[0])
+            .filter((p,idx) =>
+              String(playerRows[idx][i+1]).toLowerCase() ===
+              String(name).toLowerCase()
+            )
+            .filter(p =>
+              String(p).toLowerCase() !==
+              String(correct).toLowerCase()
+            );
 
           return `
             <div class="rank-row ${isCorrect?'correct':''}">
@@ -403,11 +426,23 @@ const guessers = playerRows
     `;
 
     container.appendChild(card);
+
   });
+
+  // mobile tap toggle
+  setTimeout(() => {
+    document.querySelectorAll(".rank-row").forEach(r => {
+      r.addEventListener("click", () => {
+        r.classList.toggle("open");
+      });
+    });
+  }, 0);
+
 }
 
 load();
 
 </script>
+
 </body>
 </html>
