@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Music League Results</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #121212;
+      color: white;
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 28px;
+      font-size: 42px;
+    }
+
+    .leaderboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 42px;
+    }
+
+    .player-card {
+      background: #181818;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    .gold { border: 2px solid #FFD700; }
+    .silver { border: 2px solid #C0C0C0; }
+    .bronze { border: 2px solid #CD7F32; }
+
+    .player-rank {
+      font-size: 13px;
+      opacity: 0.6;
+      margin-bottom: 10px;
+    }
+
+    .player-name {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .player-score {
+      font-size: 42px;
+      font-weight: 800;
+      color: #1DB954;
+    }
+
+    .player-percent {
+      margin-top: 8px;
+      opacity: 0.75;
+      font-size: 15px;
+    }
+
+    .songs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 24px;
+    }
+
+    .song-card {
+      background: #181818;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    .song-meta {
+      margin-top: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .ranking {
+      margin-top: 10px;
+    }
+
+    .rank-row {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .rank-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .name { font-weight: 500; }
+
+    .correct .name {
+      color: #1DB954;
+      font-weight: 700;
+    }
+
+    .correct-badge {
+      margin-left: 8px;
+      color: #1DB954;
+      font-size: 12px;
+    }
+
+    .count { opacity: 0.7; }
+
+    .bar-bg {
+      width: 100%;
+      height: 14px;
+      background: #2a2a2a;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      background: #535353;
+      transition: width 0.6s ease;
+    }
+
+    .correct .bar {
+      background: #1DB954;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute;
+      left: 0;
+      top: calc(100% + 8px);
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 140px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: 0.15s ease;
+      z-index: 100;
+    }
+
+    .rank-row:hover .tooltip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tooltip-title {
+      font-size: 11px;
+      opacity: 0.6;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .tooltip-person {
+      margin-bottom: 2px;
+    }
+
+    .error {
+      color: #ff6b6b;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1 id="title">Music League Results</h1>
+
+<div id="leaderboard" class="leaderboard"></div>
+<div id="songs" class="songs"></div>
+
+<script>
+
+const SHEET_ID = "1JRwCEoSQD_4pLFUa_m9e6CF6aIJHztIgOtcXl36iGrY";
+
+async function load() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sheetName = params.get("sheet") || "Sheet1";
+
+    document.getElementById("title").innerText =
+      `Music League Results — ${sheetName}`;
+
+    const url =
+      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+
+    if (start === -1 || end === -1) {
+      throw new Error("Failed to parse sheet");
+    }
+
+    const data = JSON.parse(text.substring(start, end + 1));
+
+    const rawRows = data.table.rows.map(r =>
+      (r.c || []).map(c => c ? c.v : "")
+    );
+
+    const headers = rawRows[0];
+    const correctRow = rawRows[1];
+    const playerRows = rawRows.slice(2);
+
+    // filter null songs
+    const songs = [];
+    const correctAnswers = [];
+
+    headers.slice(1).forEach((id, i) => {
+      if (!id) return;
+      songs.push(id);
+      correctAnswers.push(correctRow[i + 1]);
+    });
+
+    renderLeaderboard(correctAnswers, playerRows);
+    renderSongs(songs, correctAnswers, playerRows);
+
+  } catch (err) {
+    document.body.innerHTML =
+      `<div class="error">${err}</div>`;
+  }
+}
+
+function renderLeaderboard(correctAnswers, playerRows) {
+
+  const leaderboard = playerRows.map(row => {
+
+    const player = row[0];
+    let correct = 0;
+
+    row.slice(1).forEach((guess, i) => {
+
+      const actual = correctAnswers[i];
+
+      // skip self song
+      if (
+        String(player).toLowerCase() ===
+        String(actual).toLowerCase()
+      ) return;
+
+      if (
+        String(guess).toLowerCase() ===
+        String(actual).toLowerCase()
+      ) correct++;
+    });
+
+    const total = correctAnswers.filter(a =>
+      String(a).toLowerCase() !==
+      String(player).toLowerCase()
+    ).length;
+
+    return {
+      name: player,
+      correct,
+      total,
+      percent: Math.round(correct / total * 100)
+    };
+  }).sort((a,b) => b.correct - a.correct);
+
+  const el = document.getElementById("leaderboard");
+
+  el.innerHTML = leaderboard.map((p,i) => {
+
+    let medal = "";
+    if (i===0) medal="gold";
+    else if (i===1) medal="silver";
+    else if (i===2) medal="bronze";
+
+    return `
+      <div class="player-card ${medal}">
+        <div class="player-rank">#${i+1}</div>
+        <div class="player-name">${p.name}</div>
+        <div class="player-score">${p.correct}/${p.total}</div>
+        <div class="player-percent">${p.percent}% accuracy</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderSongs(songIds, correctAnswers, playerRows) {
+
+  const container = document.getElementById("songs");
+  container.innerHTML = "";
+
+  songIds.forEach((songId, i) => {
+
+    const correct = correctAnswers[i];
+    const counts = {};
+
+    playerRows.forEach(row => {
+
+      const player = row[0];
+
+      // skip submitter self vote
+      if (
+        String(player).toLowerCase() ===
+        String(correct).toLowerCase()
+      ) return;
+
+      const guess = row[i+1];
+      if (!guess) return;
+
+      counts[guess] = (counts[guess]||0)+1;
+    });
+
+    const ranking = Object.entries(counts)
+      .sort((a,b)=>b[1]-a[1]);
+
+    const max = ranking[0]?.[1] || 1;
+
+    const correctCount = counts[correct] || 0;
+    const percent = Math.round(correctCount / playerRows.length * 100);
+
+    const card = document.createElement("div");
+    card.className = "song-card";
+
+    card.innerHTML = `
+
+      <iframe
+        style="border-radius:12px"
+        src="https://open.spotify.com/embed/track/${songId}?utm_source=generator&theme=0"
+        width="100%"
+        height="80"
+        frameborder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy">
+      </iframe>
+
+      <div class="song-meta">
+        ${percent}% guessed correctly
+      </div>
+
+      <div class="ranking">
+
+        ${ranking.map(([name,count]) => {
+
+          const isCorrect =
+            name.toLowerCase() === correct.toLowerCase();
+
+          const width = (count/max)*100;
+const guessers = playerRows
+  .map(r => r[0])
+  .filter((playerName, idx) => {
+
+    // what this player guessed for this song
+    const guess = playerRows[idx][i + 1];
+
+    // match this rank row artist
+    const matches =
+      String(guess || "").toLowerCase().trim() ===
+      String(name).toLowerCase().trim();
+
+    // ❌ exclude the song submitter (correct answer owner)
+    const isSubmitter =
+      String(playerName).toLowerCase().trim() ===
+      String(correct).toLowerCase().trim();
+
+    return matches && !isSubmitter;
+  });
+
+          return `
+            <div class="rank-row ${isCorrect?'correct':''}">
+
+              <div class="rank-header">
+                <div>
+                  <span class="name">${name}</span>
+                  ${isCorrect ? '<span class="correct-badge">✓</span>' : ''}
+                </div>
+                <div class="count">${count}</div>
+              </div>
+
+              <div class="bar-bg">
+                <div class="bar" style="width:${width}%"></div>
+              </div>
+
+              <div class="tooltip">
+                <div class="tooltip-title">guessed by</div>
+                ${guessers.map(g=>`<div class="tooltip-person">${g}</div>`).join("")}
+              </div>
+
+            </div>
+          `;
+        }).join("")}
+
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+load();
+
+</script>
+</body>
+</html>
