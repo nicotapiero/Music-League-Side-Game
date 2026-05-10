@@ -357,7 +357,27 @@ function renderSongs(songIds, correctAnswers, playerRows) {
     const max = ranking[0]?.[1] || 1;
 
     const correctCount = counts[correct] || 0;
-    const percent = Math.round(correctCount / playerRows.length * 100);
+    let validGuesses = 0;
+
+playerRows.forEach(row => {
+
+  const player = row[0];
+
+  // skip submitter of the song
+  if (
+    String(player).toLowerCase().trim() ===
+    String(correct).toLowerCase().trim()
+  ) return;
+
+  const guess = row[i + 1];
+  if (!guess) return;
+
+  validGuesses++;
+});
+
+const percent = validGuesses === 0
+  ? 0
+  : Math.round((correctCount / validGuesses) * 100);
 
     const card = document.createElement("div");
     card.className = "song-card";
